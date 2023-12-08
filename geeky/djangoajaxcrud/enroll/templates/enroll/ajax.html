@@ -1,0 +1,123 @@
+<script>
+$('#btnsave').click(function(){
+
+    console.log("Save button clicked");
+    output = "";
+let sid = $("#studentID").val(); //this id studentID defined in hidden html field, we can't see in html as it is hidden and based on this id, we can update the data
+let nm = $('#nameid').val();
+//nameid defined in widgets in forms.py otherwise id_name is default by django forms.py | here we set our desired id in widget section in forms.py
+let em = $('#emailid').val();
+let pw = $('#passwordid').val();
+let csrf = $("input[name=csrfmiddlewaretoken]").val();
+if(nm == ''){
+    console.log("Please enter your Name");
+}
+else if (em == ''){
+    console.log("Please enter your Email");
+}
+else if (pw == ''){
+    console.log("Please enter your Password");
+}
+else{
+    mydata = {'studentID':sid, 'name':nm, 'email':em, 'password':pw, 'csrfmiddlewaretoken':csrf};
+    $.ajax({
+        url: {% url 'save' %}, //name='save' in urls.py
+        method: 'POST',
+        data: mydata,
+       // success: function(data){
+        //    console.log(data);
+         // we can data instead response
+            
+            success: function(response){
+                console.log(response); // response comming from views.py in json format | status code 200 replace 'status':'Save'
+            if(response.status == 'Save'){
+                $("#notification").text("New Record successfully added!")
+                $("#notification").show();
+                $("#notification").fadeOut(3000);
+                console.log("Form Submitted Successfully");
+
+                //only one form exist in html that's why [0]; reset the form | this form is in index.html
+                //console.log(response.student_data)
+                students = response.student_data;
+                for (i=0; i<students.length; i++){
+                    output += "<tr> <td>"+students[i].id+"</td> <td>"+students[i].name+"</td> <td>"+
+                        students[i].email+"</td> <td>"+students[i].password+
+                        '</td> <td> <input type="button" class="btn btn-warning btn-edit" value="Edit" data-sid="'+students[i].id+'"> '+
+                            ' <input type="button" class="btn btn-del btn-danger" value="Deletes" data-sid="'+students[i].id+'">'+'</td> </tr> ';
+                }
+               
+                $("#tbody").html(output); // .html() to render html tag inside string | $("#tbody").html(output) means adding the output in tbody in index.html as tbody is id in index.html
+                $("#studentID").val('');// kaj sese ID khali na korle new record oi j ID dhore rakhbe( last edi kora datar) sei id te new data place kore nibe
+                $("form")[0].reset(); //reset the form
+            }   
+            if (response.status == 0) {
+                console.log("Unable to save the form")
+                $("#studentID").val('');// kaj sese ID khali na korle new record oi j ID dhore rakhbe( last edi kora datar) sei id te new data place kore nibe
+                $("form")[0].reset(); //reset the form
+                
+            }
+        
+        },
+
+
+    })
+    //console.log('Name:',nm);
+   // console.log('Email:',em);
+   // console.log('Password:',pw);
+}
+});
+
+// Delete Data 
+$("tbody").on("click",".btn-del", function (){
+    console.log("Delete button clicked");
+    let id = $(this).attr("data-sid");
+    let csrf = $("input[name=csrfmiddlewaretoken]").val();
+    mydata = {'sid':id, 'csrfmiddlewaretoken':csrf};
+    mythis = this; //this means current object
+    $.ajax({
+        url: {% url 'delete' %},
+        method: 'POST',
+        data: mydata,
+        success: function(response){ //success means response from views.py | response is json format | response.status is coming from views.py
+            console.log(response); //response means data comming from views.py
+            if(response.status == 1){
+                 console.log("Data Deleted Successfully");
+                 //fade out the deleted row/data
+                    $(mythis).closest("tr").fadeOut(); //closest means  parent element of the current element | here current element is button
+
+                }
+            else{
+                consolde.log("Unable to delete the data");
+            }
+        },
+        
+    });
+})
+
+
+// Edit Data | when click Edit then id will go to views.py and check id from database and return the data in json format and populate the data into html left side form
+
+$("tbody").on("click",".btn-edit", function (){
+    console.log("Edi button clicked");
+    let id = $(this).attr("data-sid");
+    let csrf = $("input[name=csrfmiddlewaretoken]").val();
+    mydata = {'sid':id, 'csrfmiddlewaretoken':csrf};
+  
+    $.ajax({
+        url: {% url 'edit' %},
+        method: 'POST',
+        data: mydata,
+        success: function(response){ //success means response from views.py ( JsonResponse)| response is json format | response.status is coming from views.py
+            console.log(response); //response means data comming from views.py
+            $("#studentID").val(response.id); //this id, we can't see in html as it is hidden and based on this id, we can update the data
+            $("#nameid").val(response.name); // response == student_data
+            $("#emailid").val(response.email);
+            $("#passwordid").val(response.password);
+            
+        },
+        
+    })
+})
+
+
+</script> 
